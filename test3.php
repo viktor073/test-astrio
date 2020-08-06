@@ -1,6 +1,6 @@
 <?php
 
-$arrayTags = ["<a>", "<b>", "</a>", "</b>", "<div>", "</div>",  "<span>", "<span>", "</span>", "<span>", "</span>", "</span>"];
+$arrayTags = ["<a>", "<b>", "</a>", "</b>", "<div>",  "</b>", "</div>",  "<span>", "<span>", "</span>", "<span>", "</span>", "</span>"];
 
 
 function test(array $arrayTags): bool
