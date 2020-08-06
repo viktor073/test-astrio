@@ -7,9 +7,9 @@ require_once "MysqlQueryBuilder.php";
  */
 interface InterfaceBox
 {
-	public function setData($key, $value);
+	public function setData(string $key, $value): bool;
 
-	public function getData($key);
+	public function getData(string $key);
 
 	public function save();
 
@@ -18,20 +18,36 @@ interface InterfaceBox
 
 
 /**
- *  abstract class AbstractBox
+ *  abstract class
  */
 abstract class AbstractBox implements InterfaceBox
 {
+	/**
+	 * [$data store $key, $value]
+	 * @var array
+	 */
 	protected array $data = [];
 
-	public function setData($key, $value)
+	/**
+	 * [setData set $key, $value]
+	 * @param [string] $key  [key for value]
+	 * @param [bool] $value [value]
+	 */
+	public function setData(string $key, $value): bool
 	{
 		$this->data[] = [$key, $value];
-
-		return true;
+		if (isset($this->data[$key])) {
+			return true;
+		}
+		return false;
 	}
 
-	public function getData($key)
+	/**
+	 * [getData get from this data]
+	 * @param  [string] $key [key for value]
+	 * @return [mixed]      [return mixed]
+	 */
+	public function getData(string $key)
 	{
 		if (($key = array_search($key, array_column($this->data, 0))) !== false) {
 			return $this->data[$key][1];
@@ -39,53 +55,89 @@ abstract class AbstractBox implements InterfaceBox
 		return null;
 	}
 
+	/**
+	 * [save abstract function]
+	 */
 	abstract public function save();
 
+	/**
+	 * [load abstract function]
+	 */
 	abstract public function load();
 }
 
 /**
- * class FileBox
+ * class for save and load data from file
  */
 class FileBox extends AbstractBox
 {
+	/**
+	 * [$filename name file for gata]
+	 * @var string
+	 */
 	protected $filename = "FileBox.txt";
 
-	public function save()
+	/**
+	 * [save for file]
+	 * @return [bool]
+	 */
+	public function save(): bool
 	{
 		touch($this->filename);
 
-		file_put_contents($this->filename, json_encode($this->data));
-
-		return $this;
+		return file_put_contents($this->filename, json_encode($this->data));
 	}
 
-	public function load()
+	/**
+	 * [load data form file]
+	 * @return [type] [description]
+	 */
+	public function load(): bool
 	{
 		$this->data = json_decode(file_get_contents($this->filename));
+		if (is_null($this->data)) {
+			return false;
+		}
+		return true;
 	}
 }
 
 /**
- * class FileBox
+ * class for save and load data from data base
  */
 class DbBox extends AbstractBox
 {
+	/**
+	 * mysql query builder
+	 */
 	protected MysqlQueryBuilder $builder;
 
+	/**
+	 * [init DbBox and MysqlQueryBuilder]
+	 */
 	public function __construct()
 	{
 		$this->builder = MysqlQueryBuilder::table('data');
 	}
 
-	public function save()
+	/**
+	 * [save for data base]
+	 * @return [bool]
+	 */
+	public function save(): bool
 	{
 		foreach ($this->data as $data) {
-			$this->builder->insert(['key_id', 'value'], $data)->set();
+			if (!$this->builder->insert(['key_id', 'value'], $data)->set()) {
+			 	return false;
+			}
 		}
 
+		return true;
 	}
 
+	/**
+	 * [load from data base]
+	 */
 	public function load()
 	{
 		foreach ($this->builder->all() as $fetch) {
@@ -95,14 +147,25 @@ class DbBox extends AbstractBox
 }
 
 /**
- * Box
+ * Box store
  */
 class Box
 {
+	/**
+	 * [$instance static param for singlton]
+	 * @var Box or null
+	 */
 	protected static ?Box $instance = null;
 
+	/**
+	 * interface box
+	 */
 	protected InterfaceBox $interfaceBox;
 
+	/**
+	 * [init new box]
+	 * @param InterfaceBox $interfaceBox
+	 */
 	protected function __construct(InterfaceBox $interfaceBox)
 	{
 		$this->interfaceBox = $interfaceBox;
@@ -123,35 +186,58 @@ class Box
 		//
 	}
 
-	public static function init(InterfaceBox $interfaceBox)
+	/**
+	 * [init singlton box]
+	 * @param  InterfaceBox $interfaceBox
+	 * @return [Box]
+	 */
+	public static function init(InterfaceBox $interfaceBox): Box
 	{
 		self::$instance ??= new static($interfaceBox);
 
         return self::$instance;
 	}
 
-	public function setData($key, $value)
+	/**
+	 * [call function setData from interfaceBox]
+	 * @param [string] $key   [description]
+	 */
+	public function setData(string $key, $value)
 	{
 		$this->interfaceBox->setData($key, $value);
 	}
 
-	public function getData($key)
+	/**
+	 * [call function getData from interfaceBox]
+	 * @param  [string] $key
+	 * @return [mixed]
+	 */
+	public function getData(string $key)
 	{
 		return $this->interfaceBox->getData($key);
 	}
 
+	/**
+	 * [call function save from interfaceBox]
+	 */
 	public function save()
 	{
-		return $this->interfaceBox->save();
+		$this->interfaceBox->save();
 	}
 
+	/**
+	 * call function load from interfaceBox
+	 */
 	public function load()
 	{
-		return $this->interfaceBox->load();
+		$this->interfaceBox->load();
 	}
 }
 
-$box = Box::init(new FileBox);
+/**
+ * [client code]
+ */
+$box = Box::init(new DbBox);
 $box->setData("1", "11111");
 $box->setData("2", "222222");
 $box->setData("3", "3333");
