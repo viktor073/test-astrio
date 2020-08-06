@@ -3,7 +3,7 @@
 require_once "Connect.php";
 
 /**
- * Builder query MySQL
+ * query builder MySQL
  */
 class MysqlQueryBuilder
 {
@@ -16,24 +16,45 @@ class MysqlQueryBuilder
 	protected array $into = [];
 	protected array $values = [];
 
+	/**
+	 * [init this class]
+	 * @param string $table [name table from database]
+	 */
 	protected function __construct(string $table)
 	{
 		$this->table = $table;
 		$this->connect = new Connect;
 	}
 
-	public static function table(string $table)
+	/**
+	 * [table initializations in a static context]
+	 * @param  string $table [name table from database]
+	 * @return [MysqlQueryBuilder]
+	 */
+	public static function table(string $table): MysqlQueryBuilder
 	{
 		return new MysqlQueryBuilder($table);
 	}
 
-	public function select(array $selects = [' * '])
+	/**
+	 * [insert param query SELECT]
+	 * @param  array  $selects [param query SELECT]
+	 * @return [MysqlQueryBuilder]
+	 */
+	public function select(array $selects = [' * ']): MysqlQueryBuilder
 	{
 		$this->selects = $selects;
 		return $this;
 	}
 
-	public function where(string $field, string $operator = '=', $value = null)
+	/**
+	 *  [insert in array $wheres param query WHERE]
+	 * @param  string $field
+	 * @param  string $operator
+	 * @param  [mixed] $value
+	 * @return [MysqlQueryBuilder]
+	 */
+	public function where(string $field, string $operator = '=', $value = null): MysqlQueryBuilder
 	{
 		if ($value === null) {
 			$value = $operator;
@@ -45,13 +66,23 @@ class MysqlQueryBuilder
 		return $this;
 	}
 
-	public function limit(int $start, int $offset)
+	/**
+	 * [insert in array $limits param query LIMIT]
+	 * @param  int    $start
+	 * @param  int    $offset
+	 * @return [MysqlQueryBuilder]
+	 */
+	public function limit(int $start, int $offset): MysqlQueryBuilder
 	{
 		$this->limits[] = ['start' => $start, 'offset' => $offset];
 
 		return $this;
 	}
 
+	/**
+	 * [get select query mysql]
+	 * @return [string]
+	 */
 	protected function getSelectSql(): string
 	{
 		$sql = "SELECT " . implode(', ', $this->selects) . " FROM " . $this->table;
@@ -67,6 +98,10 @@ class MysqlQueryBuilder
 		return $sql;
 	}
 
+	/**
+	 * [get insert query mysql]
+	 * @return [string]
+	 */
 	protected function getInsertSql(): string
 	{
 		$sql = "INSERT INTO " . $this->table . ' (' . implode(', ', $this->into) .
@@ -75,7 +110,13 @@ class MysqlQueryBuilder
 		return $sql;
 	}
 
-	public function insert(array $into, array $values)
+	/**
+	 * [insert param for query mysql]
+	 * @param  array  $into
+	 * @param  array  $values
+	 * @return [MysqlQueryBuilder]
+	 */
+	public function insert(array $into, array $values): MysqlQueryBuilder
 	{
 
 		$this->into = $into;
@@ -84,16 +125,28 @@ class MysqlQueryBuilder
 		return $this;
 	}
 
+	/**
+	 * [call function fetch Connect]
+	 * @return [mixed]
+	 */
 	public function get()
 	{
 		return $this->connect->fetch($this->getSelectSql(), array_column($this->wheres, 1));
 	}
 
-	public function all()
+	/**
+	 * [call function fetchAll Connect]
+	 * @return [array]
+	 */
+	public function all(): array
 	{
 		return $this->connect->fetchAll($this->getSelectSql(), array_column($this->wheres, 1));
 	}
 
+	/**
+	 * [call insert Connect]
+	 * @return [bool]
+	 */
 	public function set()
 	{
 		return $this->connect->insert($this->getInsertSql(), array_values($this->values));
