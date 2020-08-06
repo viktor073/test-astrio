@@ -1,26 +1,78 @@
 <?php
 
-function test($array_tags)
+$arrayTags = ["<a>", "<b>", "</a>", "</b>", "<div>", "</div>",  "<span>", "<span>", "</span>", "<span>", "</span>", "</span>"];
+
+
+function test(array $arrayTags): bool
 {
-	foreach ($array_tags as $array_tag => &$value) {
-		if (isCloseTag($value)) {
+	$arrayLowercaseTags = ['<a>', '<b>', '<big>', '<br>', '<em>',
+						'<i>', '<img>', '<small>', '<span>',
+						'<strong>', '<sub>', '<sup>'];
+
+	/**
+	 * [checking array for emptiness]
+	 */
+	if (empty($arrayTags)) {
+		//echo "checking array for emptiness";
+	 	return false;
+	}
+
+	foreach ($arrayTags as $arrayTag => &$value) {
+		/**
+		 * [checking tag for closing tag]
+		 */
+		if ($value[1] == '/') {
+			//echo "[not open tag for closing tag]";
 			return false;
 		}
 
-		$searchValue = '</' . substr($value, 1);
-		$key = array_search($searchValue, $array_tags);
+		/**
+		 * [search closing tag]
+		 */
+		$closeTag = '</' . substr($value, 1);
+		$keyСloseTag = array_search($closeTag, $arrayTags);
 
-		if ($key === false) {
+		if ($keyСloseTag === false) {
+			//echo "[not closing tag]";
 		 	return false;
 		}
 
-		unset($array_tags[$array_tag], $array_tags[$key]);
+		/**
+		 * [checking nested tags]
+		 */
+		$arrayChildTags = array_slice($arrayTags, $arrayTag + 1, $keyСloseTag - $arrayTag - 1);
+		if (!empty($arrayChildTags)) {
+
+			/**
+			 * [ checking lowercase tag]
+			 */
+			$lowercaseTag = array_search($value, $arrayLowercaseTags);
+			if ($lowercaseTag !== false) {
+				foreach ($arrayChildTags as $arrayChildTag => $value) {
+					/**
+					 * [checking nested tag for lowercase tag]
+					 */
+					$childLowercaseTag = array_search($value, $arrayLowercaseTags);
+					if ($childLowercaseTag == false and $value[1] != '/') {
+						//echo "[nested tag not lowercase tag]";
+						return false;
+					}
+				}
+			}
+
+			/**
+			 * [checking the structure of nested tags]
+			 */
+			if (!test($arrayChildTags)) {
+				//echo "[error the structure of nested tags]";
+				return false;
+			}
+		}
+
+		unset($arrayTags[$arrayTag], $arrayTags[$keyСloseTag]);
 	}
 
 	return true;
 };
 
-function isCloseTag(string $tag)
-{
-	return $tag[1] == '/';
-}
+var_dump(test($arrayTags));
